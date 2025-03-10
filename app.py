@@ -1,31 +1,42 @@
+# import necessary libraries
 from google import genai
 import os
+import streamlit as st
 from dotenv import load_dotenv
 
-# Load this environment variable from .env
+# load this environment variable 
 load_dotenv()
 
-# Get the Gemini API key from the environment variable
+# initialize env var from .env
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
-# check if the API key is set
+# Check if the api key is working properly
 if not GEMINI_API_KEY:
-    print("Error: Gemini api key environment variable is not set")
+    print("gemini key api is not set")
     exit()
 
-while True:
-    prompt = input("Enter your prompt: ")
+client = genai.Client(api_key=GEMINI_API_KEY)
+st.header("Gemini API Chatbot")
+if 'chat_history' not in st.session_state:
+    st.session_state.chat_history = []
 
-    # initialize the Gemini client with the api key missiing
-    client = genai.Client(api_key=GEMINI_API_KEY)
-
+prompt = st.text_input("Enter your prompt",key='user_input')
+if st.button(label="Submit"):
     try:
-        res = client.models.generate_content(
-            model='gemini-2.0-flash', contents=prompt
+        response = client.models.generate_content(
+        model='gemini-2.0-flash', contents=prompt
         )
-        if prompt == 'quit':
-            break
-        else:
-            print(res.text)
-    except Exception as e:
-        print(f"An error occurred: {e}")
+
+        st.session_state.chat_history.append({'role':'user', 'content':prompt})
+        st.session_state.chat_history.append({'role':'model', 'content':response.text})
+        
+        st.write(response.text)
+    except ValueError as e:
+        st.write(f"Error occured {e}")
+
+st.sidebar.subheader("Chat History")
+if st.session_state.chat_history:
+    for message in st.session_state.chat_history:
+        st.sidebar.write(f"{message['role']}: {message['content']}")
+
+
